@@ -111,7 +111,6 @@ class Renderer:
             finally:
                 await page.close()
 
-
 renderer = Renderer()
 render_router = APIRouter()
 
@@ -144,12 +143,3 @@ async def boundingbox(request: RenderRequest) -> RenderResponse:
         raise HTTPException(status_code=500, detail="Failed to render image: " + str(e))
 
     return RenderResponse(image_path=output_path)
-
-@asynccontextmanager
-async def lifespan(app):
-    await renderer.init_browser()
-    try:
-        yield
-    finally:
-        if renderer.browser is not None:
-            await renderer.browser.close()

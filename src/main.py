@@ -1,16 +1,31 @@
+from contextlib import asynccontextmanager
+
 import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI
 
-from routers.render_router import render_router
-from routers.similarity_router import similarity_router
-from routers.palette_router import palette_router
-from routers.render_router import lifespan
+
+from routers.render_router import render_router, renderer
+from routers.image_routers import s3loader, image_router
+
+load_dotenv()
+
+
+@asynccontextmanager
+async def lifespan(app):
+    await renderer.init_browser()
+    s3loader.init_s3()
+    try:
+        yield
+    finally:
+        if renderer.browser is not None:
+            await renderer.browser.close()
+
 
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(render_router)
-app.include_router(similarity_router)
-app.include_router(palette_router)
+app.include_router(image_router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000)
