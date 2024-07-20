@@ -31,17 +31,14 @@ def render(html_content, css_content):
     url = "http://127.0.0.1:8000/render"
 
     payload = {
-        "html": html_content,
-        "css": css_content,
+        "html_src": html_content,
+        "css_src": css_content,
     }
 
     response = requests.post(url, json=payload)
 
     if response.status_code == 200:
-        image_path = f"output_{uuid.uuid4()}.png"
-        with open(image_path, "wb") as f:
-            f.write(response.content)
-        return image_path
+        return response.json()
     else:
         raise Exception("Failed to render image: " + response.text)
 
@@ -57,13 +54,12 @@ if __name__ == "__main__":
             print("Usage for compare: check.py compare <image1> <image2> <model_name>")
         else:
             image1, image2, model_name = args.args
-            similarity = similarity(image1, image2, model_name)
-            print(similarity)
+            result = similarity(image1, image2, model_name)
+            print("result:", result)
     elif args.action == "render":
         if len(args.args) < 1 or len(args.args) > 2:
             print("Usage for convert: check.py convert <html_content> [css_content]")
         else:
-            print("render!!!!!")
             html_path = args.args[0]
             with open(html_path, "r") as f:
                 html_content = f.read()
@@ -75,5 +71,5 @@ if __name__ == "__main__":
                     css_content = f.read()
 
 
-            image_path = render(html_content, css_content)
-            print(f"Rendered image saved at: {image_path}")
+            result = render(html_content, css_content)
+            print("result:", result)
