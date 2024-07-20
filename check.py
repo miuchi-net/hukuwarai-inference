@@ -16,12 +16,12 @@ def image_to_base64(image_path):
 
 def similarity(image_path1, image_path2, model_name):
     url = "http://127.0.0.1:8000/similarity"
-    img1_base64 = image_to_base64(image_path1)
-    img2_base64 = image_to_base64(image_path2)
+    # img1_base64 = image_to_base64(image_path1)
+    # img2_base64 = image_to_base64(image_path2)
 
     payload = {
-        "img1": {"data": img1_base64},
-        "img2": {"data": img2_base64},
+        "img1": {"url": image_path1},
+        "img2": {"url": image_path2},
         "model_name": model_name,
     }
 
@@ -65,7 +65,9 @@ def palette(image_path, max_colors):
     url = "http://127.0.0.1:8000/palette"
 
     payload = {
-        "img": {"data": image_to_base64(image_path)},
+        "img": {
+            "url": image_path,
+        },
         "max_colors": max_colors,
     }
 
@@ -114,16 +116,9 @@ def run_task(action, args, index):
         if len(args) != 2:
             result = "Usage for palette: check.py color_picker <image> <max_colors>"
         else:
-            image_path, max_colors = args
-            result = palette(image_path, int(max_colors))
-            colors = result["palette"]
-            img = Image.new("RGB", (100 * len(colors), 100))
-            for i, color in enumerate(colors):
-                img.paste(Image.new("RGB", (100, 100), color), (100 * i, 0))
+            image, n_color = args
+            result = palette(image, n_color)
 
-            img_path = f"palette_{uuid.uuid4()}.png"
-            img.save(img_path)
-            result = f"Saved palette image to {img_path}"
     else:
         raise ValueError("Invalid action")
 
@@ -161,3 +156,5 @@ if __name__ == "__main__":
             print()
 
     print(f"Total elapsed time: {time.time() - start_time:.2f} seconds")
+
+
