@@ -1,11 +1,11 @@
 import base64
 import io
 import uuid
-
 import requests
 from PIL import Image
 import argparse
 import time
+import concurrent.futures
 
 
 def image_to_base64(image_path):
@@ -56,52 +56,69 @@ def palette(image_path, max_colors):
     return response.json()
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Image similarity, HTML to image conversion, and color picker")
-    parser.add_argument("action", type=str, choices=["similarity", "render", "palette"], help="Action to perform")
-    parser.add_argument("args", nargs="*", help="Arguments for the action")
-    args = parser.parse_args()
-
+def run_task(action, args, index):
     start_time = time.time()
- 
-    if args.action == "similarity":
-        if len(args.args) != 3:
-            print("Usage for compare: check.py similarity <image1> <image2> <model_name>")
+
+    if action == "similarity":
+        if len(args) != 3:
+            result =  "Usage for compare: check.py similarity <image1> <image2> <model_name>"
         else:
-            image1, image2, model_name = args.args
+            image1, image2, model_name = args
             result = similarity(image1, image2, model_name)
-            print("result:", result)
-    elif args.action == "render":
-        if len(args.args) < 1 or len(args.args) > 2:
-            print("Usage for render: check.py render <html_content> [css_content]")
+    elif action == "render":
+        if len(args) < 1 or len(args) > 2:
+            result =  "Usage for render: check.py render <html_content> [css_content]"
         else:
-            html_path = args.args[0]
+            html_path = args[0]
             with open(html_path, "r") as f:
                 html_content = f.read()
 
             css_content = ""
-            if len(args.args) == 2:
-                css_path = args.args[1]
+            if len(args) == 2:
+                css_path = args[1]
                 with open(css_path, "r") as f:
                     css_content = f.read()
 
-            result = render(html_content, css_content)
-            print("result:", result)
-    elif args.action == "palette":
-        if len(args.args) != 2:
-            print("Usage for palette: check.py color_picker <image> <max_colors>")
+            result =  render(html_content, css_content)
+    elif action == "palette":
+        if len(args) != 2:
+            result = "Usage for palette: check.py color_picker <image> <max_colors>"
         else:
-            image_path, max_colors = args.args
+            image_path, max_colors = args
             result = palette(image_path, int(max_colors))
-            print("result:", result)
             colors = result["palette"]
             img = Image.new("RGB", (100 * len(colors), 100))
             for i, color in enumerate(colors):
                 img.paste(Image.new("RGB", (100, 100), color), (100 * i, 0))
 
-            img.save(f"palette_{uuid.uuid4()}.png")
+            img_path = f"palette_{uuid.uuid4()}.png"
+            img.save(img_path)
+            result =  f"Saved palette image to {img_path}"
+    else:
+        raise ValueError("Invalid action")
 
-    end_time = time.time()
+    return result, time.time() - start_time
 
-    print("Time elapsed:", end_time - start_time, "seconds.")
-            
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Image similarity, HTML to image conversion, and color picker")
+    parser.add_argument("action", type=str, choices=["similarity", "render", "palette"], help="Action to perform")
+    parser.add_argument("args", nargs="*", help="Arguments for the action")
+
+    args = parser.parse_args()
+
+    start_time = time.time()
+
+    N_PROCESSES = 100
+    N_PARALLEL = 100
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=N_PROCESSES) as executor:
+        futures = [executor.submit(run_task, args.action, args.args, i) for i in range(N_PARALLEL)]
+        for future in concurrent.futures.as_completed(futures):
+            result, elapsed_time = future.result()
+            print(f"Result: {result}")
+            print(f"Elapsed time: {elapsed_time:.2f} seconds")
+            print()
+    
+    print(f"Total elapsed time: {time.time() - start_time:.2f} seconds")
+        
