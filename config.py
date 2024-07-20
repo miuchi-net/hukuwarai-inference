@@ -1,4 +1,4 @@
 class Config:
-    colorpicker_threshold = 0.1
+    colorpicker_threshold = 300
     random_state = 34
 
