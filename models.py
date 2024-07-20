@@ -6,8 +6,11 @@ from imgsim import SimilalityCalculator
 
 class PtPretrainedModel(SimilalityCalculator):
     def __init__(self, model_name: str):
-        self.model = create_model(model_name, pretrained=True, num_classes=0)
-        self.model.eval()
+        try:
+            self.model = create_model(model_name, pretrained=True, num_classes=0)
+            self.model.eval()
+        except Exception as e:
+            raise ValueError(f"Failed to load model: {str(e)}")
 
     def calculate(self, img1: torch.Tensor, img2: torch.Tensor) -> float:
         with torch.no_grad():
