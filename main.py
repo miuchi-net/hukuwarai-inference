@@ -1,17 +1,19 @@
 import base64
 import io
 import uuid
+from typing import List
 
 import numpy as np
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
 from PIL import Image as PILImage
 from pydantic import BaseModel
 from pyppeteer import launch
 
+from config import Config
 from imgsim import ImageSim
 from models import MSE, PtPretrainedModel, Zero
+from palette import PaletteSolver
 
 
 class Image(BaseModel):
@@ -23,6 +25,7 @@ class SimilarityRequest(BaseModel):
     img2: Image
     model_name: str
 
+
 class SimilarityResponse(BaseModel):
     similarity: float
 
@@ -31,10 +34,24 @@ class RenderRequest(BaseModel):
     html_src: str
     css_src: str
 
+
 class RenderResponse(BaseModel):
     image_path: str
 
+
+class PelleteRequest(BaseModel):
+    img: Image
+    max_colors: int
+
+
+class PelleteResponse(BaseModel):
+    palette: List[str]
+    n_colors: int
+
+
+
 app = FastAPI()
+
 
 async def html_to_image(html_content: str, css_content: str, output_path: str):
     browser = await launch()
@@ -83,9 +100,6 @@ async def similarity(request: SimilarityRequest) -> SimilarityResponse:
     img1 = img1.resize((500, 500))
     img2 = img2.resize((500, 500))
 
-    print("img1 shape:", np.array(img1).shape)
-    print("img2 shape:", np.array(img2).shape)
-
     img1 = np.array(img1)
     img2 = np.array(img2)
 
@@ -97,10 +111,29 @@ async def similarity(request: SimilarityRequest) -> SimilarityResponse:
         model = PtPretrainedModel(request.model_name)
 
     imgsim = ImageSim(img1, img2, model)
-    
+
     similarity = imgsim.calculate()
 
     return SimilarityResponse(similarity=similarity)
 
+
+# 画像を受け取って、 k-means でいい感じに減色した画像を返す
+@app.post("/palette")
+async def palette(request: PelleteRequest) -> PelleteResponse:
+    img_data = base64.b64decode(request.img.data)
+    img = PILImage.open(io.BytesIO(img_data))
+    img = img.convert("RGB")
+    img = img.resize((500, 500))
+    img = np.array(img)
+
+    max_colors = request.max_colors
+
+    solver = PaletteSolver(img, max_colors)
+
+    palette = solver.solve()
+
+    return PelleteResponse(palette=palette, n_colors=len(palette))
+
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
