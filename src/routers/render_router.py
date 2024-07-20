@@ -44,6 +44,7 @@ class Renderer:
                 </html>
                 """
                 await page.setJavaScriptEnabled(False)
+                await page.setOfflineMode(True)
                 await page.setViewport({"width": 500, "height": 500})
                 await page.setContent(src)
                 await page.screenshot({"path": output_path})
