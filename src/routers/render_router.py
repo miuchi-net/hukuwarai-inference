@@ -1,41 +1,57 @@
+import asyncio
 import uuid
-from fastapi import APIRouter, HTTPException, FastAPI
+from contextlib import asynccontextmanager
+
+from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel
 from pyppeteer import launch
-from contextlib import asynccontextmanager
+
 
 class RenderRequest(BaseModel):
     html_src: str
     css_src: str
 
+
 class RenderResponse(BaseModel):
     image_path: str
 
-browser = None
 
-async def init_browser():
-    global browser
-    if browser is None:
-        browser = await launch()
+class Renderer:
+    def __init__(self):
+        self.browser = None
+        self.lock = asyncio.Lock()
 
-async def html_to_image(html_content: str, css_content: str, output_path: str):
-    page = await browser.newPage()
-    src = f"""
-    <html>
-    <head>
-        <style>{css_content}</style>
-    </head>
-    <body>
-        {html_content}
-    </body>
-    </html>
-    """
-    await page.setJavaScriptEnabled(False)
-    await page.setContent(src)
-    await page.screenshot({"path": output_path})
-    await page.close()
+    async def init_browser(self):
+        async with self.lock:
+            if self.browser is None:
+                self.browser = await launch()
 
+    async def html_to_image(
+        self, html_content: str, css_content: str, output_path: str
+    ):
+        async with self.lock:
+            page = await self.browser.newPage()
+            try:
+                src = f"""
+                <html>
+                <head>
+                    <style>{css_content}</style>
+                </head>
+                <body>
+                    {html_content}
+                </body>
+                </html>
+                """
+                await page.setJavaScriptEnabled(False)
+                await page.setContent(src)
+                await page.screenshot({"path": output_path})
+            finally:
+                await page.close()
+
+
+renderer = Renderer()
 render_router = APIRouter()
+
 
 @render_router.post("/render")
 async def render(request: RenderRequest) -> RenderResponse:
@@ -45,21 +61,25 @@ async def render(request: RenderRequest) -> RenderResponse:
     output_path = f"rendered_{uuid.uuid4()}.png"
 
     try:
-        await html_to_image(html_content, css_content, output_path)
+        await renderer.html_to_image(html_content, css_content, output_path)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to render image: " + str(e))
 
     return RenderResponse(image_path=output_path)
 
+
 app = FastAPI()
+
 
 @asynccontextmanager
 async def lifespan(app):
-    await init_browser()
+    await renderer.init_browser()
     try:
         yield
     finally:
-        await browser.close()
+        if renderer.browser is not None:
+            await renderer.browser.close()
+
 
 app.include_router(render_router)
 
