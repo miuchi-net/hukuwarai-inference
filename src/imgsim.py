@@ -18,13 +18,14 @@ class ImageSim:
     ):
         if not self._vaidate_img(img1, img2):
             # raise ValueError("Images are not valid")
-            return 0
+            return 
 
         self.img1 = self._preprocess(img1)
         self.img2 = self._preprocess(img2)
 
         self.model = calculator
 
+    # TODO: Implement Error Handling
     def _vaidate_img(self, img1, img2) -> bool:
         checklist = [
             (

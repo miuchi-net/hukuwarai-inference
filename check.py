@@ -5,6 +5,7 @@ import uuid
 import requests
 from PIL import Image
 import argparse
+import time
 
 
 def image_to_base64(image_path):
@@ -61,6 +62,8 @@ if __name__ == "__main__":
     parser.add_argument("args", nargs="*", help="Arguments for the action")
     args = parser.parse_args()
 
+    start_time = time.time()
+ 
     if args.action == "similarity":
         if len(args.args) != 3:
             print("Usage for compare: check.py similarity <image1> <image2> <model_name>")
@@ -97,4 +100,8 @@ if __name__ == "__main__":
                 img.paste(Image.new("RGB", (100, 100), color), (100 * i, 0))
 
             img.save(f"palette_{uuid.uuid4()}.png")
+
+    end_time = time.time()
+
+    print("Time elapsed:", end_time - start_time, "seconds.")
             
