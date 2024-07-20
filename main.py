@@ -66,6 +66,8 @@ async def html_to_image(html_content: str, css_content: str, output_path: str):
     </body>
     </html>
     """
+    
+    await page.setJavaScriptEnabled(False)
     await page.setContent(src)
     await page.screenshot({"path": output_path, "fullPage": True})
     await browser.close()
