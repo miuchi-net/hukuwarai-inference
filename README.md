@@ -94,14 +94,6 @@ Get color palette from image.
   },
   "max_colors": 0
 }
-
-```json
-{
-  "img": {
-    "data": "string"
-  },
-  "max_colors": 0
-}
 ```
 
 - `img`: Image data. base64 encoded any image.
