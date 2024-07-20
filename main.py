@@ -1,11 +1,14 @@
 import base64
 import io
+import uuid
 
 import numpy as np
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
 from PIL import Image as PILImage
 from pydantic import BaseModel
+from pyppeteer import launch
 
 from imgsim import ImageSim
 from models import MSE, PtPretrainedModel, Zero
@@ -22,6 +25,42 @@ class SimilarityRequest(BaseModel):
 
 
 app = FastAPI()
+
+
+async def html_to_image(html_content: str, css_content: str, output_path: str):
+    browser = await launch()
+    page = await browser.newPage()
+    src = f"""
+    <html>
+    <head>
+        <style>{css_content}</style>
+    </head>
+    <body>
+        {html_content}
+    </body>
+    </html>
+    """
+    await page.setContent(src)
+    await page.screenshot({"path": output_path, "fullPage": True})
+    await browser.close()
+
+
+@app.post("/render")
+async def render(request: Request):
+    data = await request.json()
+    html_content = data.get("html")
+    css_content = data.get("css")
+
+    if not html_content:
+        raise HTTPException(status_code=400, detail="HTML content is required")
+    if not css_content:
+        css_content = ""
+
+    output_path = f"rendered_{uuid.uuid4()}.png"
+
+    await html_to_image(html_content, css_content, output_path)
+
+    return FileResponse(output_path, media_type="image/png", filename="output.png")
 
 
 @app.post("/similarity")
@@ -56,5 +95,4 @@ async def similarity(request: SimilarityRequest):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
