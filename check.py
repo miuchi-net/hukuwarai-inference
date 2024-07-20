@@ -43,22 +43,34 @@ def render(html_content, css_content):
         raise Exception("Failed to render image: " + response.text)
 
 
+def palette(image_path, max_colors):
+    url = "http://127.0.0.1:8000/palette"
+
+    payload = {
+        "img": {"data": image_to_base64(image_path)},
+        "max_colors": max_colors,
+    }
+
+    response = requests.post(url, json=payload)
+    return response.json()
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Image similarity and HTML to image conversion")
-    parser.add_argument("action", type=str, choices=["similarity", "render"], help="Action to perform")
+    parser = argparse.ArgumentParser(description="Image similarity, HTML to image conversion, and color picker")
+    parser.add_argument("action", type=str, choices=["similarity", "render", "palette"], help="Action to perform")
     parser.add_argument("args", nargs="*", help="Arguments for the action")
     args = parser.parse_args()
 
     if args.action == "similarity":
         if len(args.args) != 3:
-            print("Usage for compare: check.py compare <image1> <image2> <model_name>")
+            print("Usage for compare: check.py similarity <image1> <image2> <model_name>")
         else:
             image1, image2, model_name = args.args
             result = similarity(image1, image2, model_name)
             print("result:", result)
     elif args.action == "render":
         if len(args.args) < 1 or len(args.args) > 2:
-            print("Usage for convert: check.py convert <html_content> [css_content]")
+            print("Usage for render: check.py render <html_content> [css_content]")
         else:
             html_path = args.args[0]
             with open(html_path, "r") as f:
@@ -70,6 +82,19 @@ if __name__ == "__main__":
                 with open(css_path, "r") as f:
                     css_content = f.read()
 
-
             result = render(html_content, css_content)
             print("result:", result)
+    elif args.action == "palette":
+        if len(args.args) != 2:
+            print("Usage for palette: check.py color_picker <image> <max_colors>")
+        else:
+            image_path, max_colors = args.args
+            result = palette(image_path, int(max_colors))
+            print("result:", result)
+            colors = result["palette"]
+            img = Image.new("RGB", (100 * len(colors), 100))
+            for i, color in enumerate(colors):
+                img.paste(Image.new("RGB", (100, 100), color), (100 * i, 0))
+
+            img.save(f"palette_{uuid.uuid4()}.png")
+            
