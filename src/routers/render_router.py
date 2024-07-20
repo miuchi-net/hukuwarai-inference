@@ -17,9 +17,10 @@ class RenderResponse(BaseModel):
 
 
 class Renderer:
-    def __init__(self):
+    def __init__(self, max_concurrent_renders: int = 10):
         self.browser = None
         self.lock = asyncio.Lock()
+        self.semaphore = asyncio.Semaphore(max_concurrent_renders)
 
     async def init_browser(self):
         async with self.lock:
@@ -29,7 +30,7 @@ class Renderer:
     async def html_to_image(
         self, html_content: str, css_content: str, output_path: str
     ):
-        async with self.lock:
+        async with self.semaphore:  # Use semaphore to limit concurrency
             page = await self.browser.newPage()
             try:
                 src = f"""
@@ -43,6 +44,7 @@ class Renderer:
                 </html>
                 """
                 await page.setJavaScriptEnabled(False)
+                await page.setViewport({"width": 500, "height": 500})
                 await page.setContent(src)
                 await page.screenshot({"path": output_path})
             finally:
@@ -68,9 +70,6 @@ async def render(request: RenderRequest) -> RenderResponse:
     return RenderResponse(image_path=output_path)
 
 
-app = FastAPI()
-
-
 @asynccontextmanager
 async def lifespan(app):
     await renderer.init_browser()
@@ -79,10 +78,3 @@ async def lifespan(app):
     finally:
         if renderer.browser is not None:
             await renderer.browser.close()
-
-
-app.include_router(render_router)
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
