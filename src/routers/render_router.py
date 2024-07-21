@@ -118,8 +118,9 @@ async def render(request: RenderRequest) -> RenderResponse:
         await renderer.html_to_image(html_content, output_path)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to render image: " + str(e))
-
-    return RenderResponse(image_path=output_path)
+    
+    url = os.getenv("INFERENCE_SERVER_DOMAIN") + output_path
+    return RenderResponse(image_path=url)
 
 
 @render_router.post("/boudingbox")
@@ -133,4 +134,5 @@ async def boundingbox(request: RenderRequest) -> RenderResponse:
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to render image: " + str(e))
 
-    return RenderResponse(image_path=output_path)
+    url = os.getenv("INFERENCE_SERVER_DOMAIN") + output_path
+    return RenderResponse(image_path=url)
