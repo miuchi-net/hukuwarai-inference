@@ -29,12 +29,11 @@ def similarity(image_path1, image_path2, model_name):
     return response.json()
 
 
-def render(html_content, css_content):
+def render(html_content):
     url = "http://127.0.0.1:8000/render"
 
     payload = {
         "html_src": html_content,
-        "css_src": css_content,
     }
 
     response = requests.post(url, json=payload)
@@ -45,12 +44,11 @@ def render(html_content, css_content):
         raise Exception("Failed to render image: " + response.text)
 
 
-def boundingbox(html_content, css_content):
+def boundingbox(html_content):
     url = "http://127.0.0.1:8000/boudingbox"
 
     payload = {
         "html_src": html_content,
-        "css_src": css_content,
     }
 
     response = requests.post(url, json=payload)
@@ -87,30 +85,24 @@ def run_task(action, args, index):
             image1, image2, model_name = args
             result = similarity(image1, image2, model_name)
     elif action == "render":
-        if len(args) != 2:
-            result = "Usage for render: check.py render <html_content> <css_content>"
+        if len(args) != 1:
+            result = "Usage for render: check.py render <html_content>"
         else:
-            html_path, css_path = args
+            html_path = args[0]
             with open(html_path, "r") as f:
                 html_content = f.read()
 
-            with open(css_path, "r") as f:
-                css_content = f.read()
-
-            result = render(html_content, css_content)
+            result = render(html_content)
 
     elif action == "boundingbox":
-        if len(args) != 2:
-            result = "Usage for boundingbox: check.py boundingbox <html_content> <css_content>"
+        if len(args) != 1:
+            result = "Usage for boundingbox: check.py boundingbox <html_content>"
         else:
-            html_path, css_path = args
+            html_path = args[0]
             with open(html_path, "r") as f:
                 html_content = f.read()
 
-            with open(css_path, "r") as f:
-                css_content = f.read()
-
-            result = boundingbox(html_content, css_content)
+            result = boundingbox(html_content)
 
     elif action == "palette":
         if len(args) != 2:
