@@ -1,4 +1,5 @@
 import asyncio
+import os
 import uuid
 from contextlib import asynccontextmanager
 
@@ -26,9 +27,7 @@ class Renderer:
             if self.browser is None:
                 self.browser = await launch(args=["--no-sandbox"])
 
-    async def html_to_image(
-        self, html_content: str, output_path: str
-    ):
+    async def html_to_image(self, html_content: str, output_path: str):
         async with self.semaphore:
             page = await self.browser.newPage()
             try:
@@ -112,27 +111,27 @@ render_router = APIRouter()
 async def render(request: RenderRequest) -> RenderResponse:
     html_content = request.html_src
 
-    output_path = f"/static/rendered_{uuid.uuid4()}.png"
+    output_path = f"./static/rendered_{uuid.uuid4()}.png"
 
     try:
         await renderer.html_to_image(html_content, output_path)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to render image: " + str(e))
-    
-    url = os.getenv("INFERENCE_SERVER_DOMAIN") + output_path
-    return RenderResponse(image_path=url)
+
+    url = os.getenv("INFERENCE_SERVER_DOMAIN") + output_path[1:]
+    return RenderResponse(image_url=url)
 
 
 @render_router.post("/boudingbox")
 async def boundingbox(request: RenderRequest) -> RenderResponse:
     html_content = request.html_src
-    
-    output_path = f"/static/rendered_{uuid.uuid4()}.png"
+
+    output_path = f"./static/rendered_{uuid.uuid4()}.png"
 
     try:
         await renderer.boundingbox(html_content, output_path)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to render image: " + str(e))
 
-    url = os.getenv("INFERENCE_SERVER_DOMAIN") + output_path
-    return RenderResponse(image_path=url)
+    url = os.getenv("INFERENCE_SERVER_DOMAIN") + output_path[1:]
+    return RenderResponse(image_url=url)
