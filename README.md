@@ -12,9 +12,9 @@ INFERENCE_SERVER_DOMAIN=
 
 
 ```bash
-$ docker build -t hukuwarai-inference .
+$ sudo docker build . -t inference
+$ sudo docker -p 8000:8000 -e INFERENCE_SERVER_DOMAIN=http://domain:8000 -it hukuwarai-inference
 ```
-
 
 ## Usage
 
