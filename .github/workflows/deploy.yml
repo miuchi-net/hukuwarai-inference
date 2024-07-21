@@ -39,7 +39,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/miuchi-net/hukuwarai-server:latest
+          tags: ghcr.io/miuchi-net/hukuwarai-inference:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
 
