@@ -1,4 +1,7 @@
+from io import BytesIO
+
 import numpy as np
+import requests
 from fastapi import APIRouter, HTTPException
 from PIL import Image as PILImage
 from pydantic import BaseModel
@@ -44,15 +47,17 @@ def _preprocess(img: PILImage.Image) -> np.ndarray:
 
 @image_router.post("/similarity")
 async def similarity(request: SimilarityRequest) -> SimilarityResponse:
-    image1_local_path = './static/' + request.img1.url.split("/")[-1]
-    image2_local_path = './static/' + request.img2.url.split("/")[-1]
+    input_url = request.img1.url
+    target_url = request.img2.url
+    
+    input_data_local_path = './static/' + input_url.split('/')[-1]
 
-    img1_data = PILImage.open(image1_local_path)
-    img2_data = PILImage.open(image2_local_path)
+    input_image = PILImage.open(input_data_local_path)
+    target_image = PILImage.open(BytesIO(requests.get(target_url).content))
 
-    img1 = _preprocess(img1_data)
-    img2 = _preprocess(img2_data)
-
+    input_image = _preprocess(input_image)
+    target_image = _preprocess(target_image)
+    
     if request.model_name == "mse":
         model = MSE()
     elif request.model_name == "zero":
@@ -60,7 +65,7 @@ async def similarity(request: SimilarityRequest) -> SimilarityResponse:
     else:
         model = PtPretrainedModel(request.model_name)
 
-    imgsim = ImageSim(img1, img2, model)
+    imgsim = ImageSim(input_image, target_image, model)
 
     similarity = imgsim.calculate()
 
@@ -69,9 +74,14 @@ async def similarity(request: SimilarityRequest) -> SimilarityResponse:
 
 @image_router.post("/palette")
 async def palette(request: PelleteRequest) -> PelleteResponse:
-    image_local_path = './static/' + request.img.url.split("/")[-1]
+    img_url = request.img.url
 
-    img_data = PILImage.open(image_local_path)
+    img_data = requests.get(img_url).content
+
+    if not img_data:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    img_data = PILImage.open(BytesIO(img_data))
 
     img = _preprocess(img_data)
 
