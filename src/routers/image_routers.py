@@ -1,12 +1,5 @@
-import base64
-import io
-import os
-from io import BytesIO
-
-import boto3
 import numpy as np
 from fastapi import APIRouter, HTTPException
-from PIL import Image
 from PIL import Image as PILImage
 from pydantic import BaseModel
 
@@ -15,18 +8,18 @@ from models import MSE, PtPretrainedModel, Zero
 from palette import PaletteSolver
 
 
-class S3Image(BaseModel):
+class Image(BaseModel):
     url: str
 
 
 class SimilarityRequest(BaseModel):
-    img1: S3Image
-    img2: S3Image
+    img1: Image
+    img2: Image
     model_name: str
 
 
 class PelleteRequest(BaseModel):
-    img: S3Image
+    img: Image
     max_colors: int
 
 
@@ -42,29 +35,7 @@ class SimilarityResponse(BaseModel):
 image_router = APIRouter()
 
 
-class S3Loader:
-    def __init__(self):
-        pass
-
-    def init_s3(self):
-        self.s3 = boto3.client("s3")
-
-    def load(self, url: str) -> Image:
-        bucket = os.getenv("BUCKET")
-        if bucket is None:
-            raise ValueError("BUCKET environment variable is not set")
-        img_data = self.s3.get_object(Bucket=bucket, Key=url)["Body"].read()
-        image = Image.open(BytesIO(img_data))
-        return image
-
-    def close(self):
-        pass
-
-
-s3loader = S3Loader()
-
-
-def _preprocess(img: Image) -> np.ndarray:
+def _preprocess(img: PILImage.Image) -> np.ndarray:
     img = img.convert("RGB")
     img = img.resize((500, 500))
     img = np.array(img)
@@ -73,8 +44,11 @@ def _preprocess(img: Image) -> np.ndarray:
 
 @image_router.post("/similarity")
 async def similarity(request: SimilarityRequest) -> SimilarityResponse:
-    img1_data = s3loader.load(request.img1.url)
-    img2_data = s3loader.load(request.img2.url)
+    image1_local_path = './static/' + request.img1.url.split("/")[-1]
+    image2_local_path = './static/' + request.img2.url.split("/")[-1]
+
+    img1_data = PILImage.open(image1_local_path)
+    img2_data = PILImage.open(image2_local_path)
 
     img1 = _preprocess(img1_data)
     img2 = _preprocess(img2_data)
@@ -95,8 +69,11 @@ async def similarity(request: SimilarityRequest) -> SimilarityResponse:
 
 @image_router.post("/palette")
 async def palette(request: PelleteRequest) -> PelleteResponse:
-    img = s3loader.load(request.img.url)
-    img = _preprocess(img)
+    image_local_path = './static/' + request.img.url.split("/")[-1]
+
+    img_data = PILImage.open(image_local_path)
+
+    img = _preprocess(img_data)
 
     max_colors = request.max_colors
 

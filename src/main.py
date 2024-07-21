@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from routers.render_router import render_router, renderer
-from routers.image_routers import s3loader, image_router
+from routers.image_routers import image_router
 
 load_dotenv()
 
@@ -14,7 +14,6 @@ load_dotenv()
 @asynccontextmanager
 async def lifespan(app):
     await renderer.init_browser()
-    s3loader.init_s3()
     try:
         yield
     finally:
