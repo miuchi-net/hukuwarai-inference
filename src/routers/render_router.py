@@ -25,12 +25,12 @@ class Renderer:
     async def init_browser(self):
         async with self.lock:
             if self.browser is None:
-                self.browser = await launch()
+                self.browser = await launch(args=["--no-sandbox"])
 
     async def html_to_image(
         self, html_content: str, css_content: str, output_path: str
     ):
-        async with self.semaphore:  
+        async with self.semaphore:
             page = await self.browser.newPage()
             try:
                 src = f"""
@@ -52,7 +52,7 @@ class Renderer:
                 await page.close()
 
     async def boundingbox(self, html_content: str, css_content: str, output_path: str):
-        async with self.semaphore:  
+        async with self.semaphore:
             page = await self.browser.newPage()
             try:
                 src = f"""
@@ -70,11 +70,11 @@ class Renderer:
                 await page.setViewport({"width": 500, "height": 500})
                 await page.setContent(src)
                 # body 以下の全ての要素のbounding boxを取得する
-                elements = await page.querySelectorAll('body *')
-                print(f'--- Found {len(elements)} elements ---')
+                elements = await page.querySelectorAll("body *")
+                print(f"--- Found {len(elements)} elements ---")
                 for element in elements:
                     box = await element.boundingBox()
-                    print('Box:', box)
+                    print("Box:", box)
                     if box is None:
                         continue
                     # bounding boxを描画して、元の div を削除
@@ -90,12 +90,12 @@ class Renderer:
                             div.style.height = box.height + 'px';
                             document.body.appendChild(div);
                         }
-                        """,        
+                        """,
                         box,
                     )
 
                 # element を削除 (ここの for を分ける必要があることに注意)
-                for element in elements:    
+                for element in elements:
                     await page.evaluate(
                         """
                         (element) => {
@@ -106,10 +106,10 @@ class Renderer:
                     )
 
                 await page.screenshot({"path": output_path})
-    
 
             finally:
                 await page.close()
+
 
 renderer = Renderer()
 render_router = APIRouter()
