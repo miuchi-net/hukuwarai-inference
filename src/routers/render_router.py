@@ -9,7 +9,6 @@ from pyppeteer import launch
 
 class RenderRequest(BaseModel):
     html_src: str
-    css_src: str
 
 
 class RenderResponse(BaseModel):
@@ -28,16 +27,13 @@ class Renderer:
                 self.browser = await launch(args=["--no-sandbox"])
 
     async def html_to_image(
-        self, html_content: str, css_content: str, output_path: str
+        self, html_content: str, output_path: str
     ):
         async with self.semaphore:
             page = await self.browser.newPage()
             try:
                 src = f"""
                 <html>
-                <head>
-                    <style>{css_content}</style>
-                </head>
                 <body>
                     {html_content}
                 </body>
@@ -51,15 +47,12 @@ class Renderer:
             finally:
                 await page.close()
 
-    async def boundingbox(self, html_content: str, css_content: str, output_path: str):
+    async def boundingbox(self, html_content: str, output_path: str):
         async with self.semaphore:
             page = await self.browser.newPage()
             try:
                 src = f"""
                 <html>
-                <head>
-                    <style>{css_content}</style>
-                </head>
                 <body>
                     {html_content}
                 </body>
@@ -118,12 +111,11 @@ render_router = APIRouter()
 @render_router.post("/render")
 async def render(request: RenderRequest) -> RenderResponse:
     html_content = request.html_src
-    css_content = request.css_src
 
     output_path = f"rendered_{uuid.uuid4()}.png"
 
     try:
-        await renderer.html_to_image(html_content, css_content, output_path)
+        await renderer.html_to_image(html_content, output_path)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to render image: " + str(e))
 
@@ -133,12 +125,11 @@ async def render(request: RenderRequest) -> RenderResponse:
 @render_router.post("/boudingbox")
 async def boundingbox(request: RenderRequest) -> RenderResponse:
     html_content = request.html_src
-    css_content = request.css_src
-
+    
     output_path = f"rendered_{uuid.uuid4()}.png"
 
     try:
-        await renderer.boundingbox(html_content, css_content, output_path)
+        await renderer.boundingbox(html_content, output_path)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to render image: " + str(e))
 
