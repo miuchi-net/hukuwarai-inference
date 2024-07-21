@@ -2,11 +2,27 @@
 
 (Not Production Ready)
 
+## setup
+
+Write `.env` file.
+
+```bash
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=
+BUCKET=
+```
+
+
+```bash
+$ docker build -t hukuwarai-inference .
+```
+
+
 ## Usage
 
 ```bash
-$ pipenv install
-$ pipenv run python main.py
+$ docker run -p 8000:8000 hukuwarai-inference
 ```
 
 - `http://localhost:8000/`
