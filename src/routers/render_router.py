@@ -12,7 +12,7 @@ class RenderRequest(BaseModel):
 
 
 class RenderResponse(BaseModel):
-    image_path: str
+    image_url: str
 
 
 class Renderer:
@@ -112,7 +112,7 @@ render_router = APIRouter()
 async def render(request: RenderRequest) -> RenderResponse:
     html_content = request.html_src
 
-    output_path = f"rendered_{uuid.uuid4()}.png"
+    output_path = f"/static/rendered_{uuid.uuid4()}.png"
 
     try:
         await renderer.html_to_image(html_content, output_path)
@@ -126,7 +126,7 @@ async def render(request: RenderRequest) -> RenderResponse:
 async def boundingbox(request: RenderRequest) -> RenderResponse:
     html_content = request.html_src
     
-    output_path = f"rendered_{uuid.uuid4()}.png"
+    output_path = f"/static/rendered_{uuid.uuid4()}.png"
 
     try:
         await renderer.boundingbox(html_content, output_path)
