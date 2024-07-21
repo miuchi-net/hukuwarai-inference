@@ -11,6 +11,7 @@ AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_DEFAULT_REGION=
 BUCKET=
+INFERENCE_SERVER_DOMAIN=
 ```
 
 
@@ -40,10 +41,10 @@ Calculate similarity between two images.
 ```json
 {
   "img1": {
-    "data": "string"
+    "url": "string"
   },
   "img2": {
-    "data": "string"
+    "url": "string"
   },
   "model_name": "string"
 }
@@ -79,13 +80,11 @@ Render image from HTML and CSS.
 ```json
 {
   "html_src": "string",
-  "css_src": "string"
 }
 ```
 
 - `html_src`: HTML source.
-- `css_src`: CSS source.
-
+ 
 
 #### Response
 
@@ -93,11 +92,11 @@ Render image from HTML and CSS.
 
 ```json
 {
-  "image_path": "string"
+  "image_url": "string"
 }
 ```
 
-- `image_path`: Path to rendered image.
+- `image_url`: Url to rendered image.
 
 
 ### `POST /palette`
@@ -143,22 +142,20 @@ Render bounding boxed of input HTML and CSS.
 ```json
 {
   "html_src": "string",
-  "css_src": "string"
 }
 ```
 
 - `html_src`: HTML source.
-- `css_src`: CSS source.
 
 #### Response
 
 ```json
 {
-  "image_path": "string"
+  "image_url": "string"
 }
 ```
 
-- `image_path`: Path to rendered image.
+- `image_url`: Url to rendered image.
 
 
 
